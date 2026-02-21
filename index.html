@@ -284,7 +284,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>Be a Galactic Archaeologist!</h1>
+        <h1>Game: Be a Galactic Archaeologist!</h1>
 	<div class="instructions">
 	    <p style="color: #276AB3;">Dr. Amalie Stokholm, a.strova.dk</p>
 	    <br>
@@ -329,23 +329,23 @@
                 <div class="orbit-options">
                     <div class="orbit-card" draggable="true" data-orbit="circle">
                         <svg class="orbit-icon" viewBox="0 0 100 100">
-                            <circle cx="50" cy="50" r="35" fill="none" stroke="rgba(200,215,255,0.6)" stroke-width="2.5"/>
-                            <circle cx="85" cy="50" r="5" fill="#aabbff"/>
+                            <circle cx="50" cy="50" r="35" fill="none" stroke="#999999" stroke-width="2.5"/>
+                            <circle cx="85" cy="50" r="5" fill="#EAA221"/>
                         </svg>
                         <div class="orbit-label">In-plane Circle</div>
                     </div>
                     <div class="orbit-card" draggable="true" data-orbit="ellipse-flat">
                         <svg class="orbit-icon" viewBox="0 0 100 100">
-                            <ellipse cx="50" cy="50" rx="40" ry="22" fill="none" stroke="rgba(200,215,255,0.6)" stroke-width="2.5"/>
-                            <circle cx="90" cy="50" r="5" fill="#aabbff"/>
+                            <ellipse cx="50" cy="50" rx="40" ry="22" fill="none" stroke="#999999" stroke-width="2.5"/>
+                            <circle cx="90" cy="50" r="5" fill="#EAA221"/>
                         </svg>
                         <div class="orbit-label">In-plane Ellipse</div>
                     </div>
                     <div class="orbit-card" draggable="true" data-orbit="ellipse-3d">
                         <svg class="orbit-icon" viewBox="0 0 100 100">
-                            <ellipse cx="50" cy="50" rx="40" ry="18" fill="none" stroke="rgba(200,215,255,0.25)" stroke-width="2" opacity="0.5"/>
-                            <ellipse cx="50" cy="50" rx="40" ry="18" fill="none" stroke="rgba(200,215,255,0.6)" stroke-width="2.5" transform="rotate(50 50 50)"/>
-                            <circle cx="22" cy="18" r="5" fill="#aabbff"/>
+                            <ellipse cx="50" cy="50" rx="40" ry="18" fill="none" stroke="#aaaaaa" stroke-width="2" opacity="0.5"/>
+                            <ellipse cx="50" cy="50" rx="40" ry="18" fill="none" stroke="#999999" stroke-width="2.5" transform="rotate(50 50 50)"/>
+                            <circle cx="22" cy="18" r="5" fill="#EAA221"/>
                         </svg>
                         <div class="orbit-label">Out-of-plane Ellipse</div>
                     </div>
@@ -405,15 +405,38 @@
     </div>
     
     <div id="congratulations" class="congratulations">
-        <h2>Congratulations!</h2>
-	<p>You have correctly measured identified the patterns.</p>
-	<p>So now is the next phase of research: what does this mean?</p>
-	<p> How can these pattern come to be? Are they as expected from the best model of how this came to be?</p>
-	<p>Or do we need to think in differently and perhaps adjust our ideas and model?</p>
+	    <h2>Congratulations!</h2>
 
-	<p> Thank you so much for playing! </p>
-        <button class="reset-btn" onclick="resetGame()">Play Again</button>
+	    <p>You have successfully identified the galactic patterns!</p>
+	    <br>
+	    <p>You have explored astronomical data of different observational types and discovered trends in nature.</p>
+	    <br>
+
+	    <p>
+		Now begins the next phase of research:
+		<b>What do these patterns mean?</b>
+	    </p>
+	    <br>
+
+	    <p>
+		How did these patterns form? 
+            </p>
+	    <p>
+		Are they consistent with our best scientific models,
+		or do we need to rethink and refine our understanding?
+	    </p>
+	    <br>
+
+	    <p>
+	        But that is a game for another time...
+	    </p>
+	    <br>
+
+	    <p><b>Thank you for playing!</b></p>
+
+	    <button class="reset-btn" onclick="resetGame()">Play Again</button>
     </div>
+
      <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
         let scene, camera, renderer;
