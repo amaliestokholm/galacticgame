@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game: Galactic Archaeology</title>
+    <style>
+	:root {
+            --red: #ff4466;
+            --green: #00ffaa;
+            --blue: #44aaff;
+            --bg: #03020f;
+            --panel: rgba(255,255,255,0.04);
+            --border: rgba(255,255,255,0.12);
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background: #1e1e24f5;
+            color: white;
+            overflow-x: hidden;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            margin: 20px 0;
+            font-size: 2.5em;
+        }
+        .instructions {
+            text-align: center;
+            margin: 20px 0;
+            font-size: 1.1em;
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 10px;
+        }
+        #canvas-container {
+            width: 100%;
+            height: 500px;
+            margin: 20px 0;
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+        }
+        .speech-bubble {
+            position: absolute;
+            background: white;
+            border-radius: 15px;
+            padding: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            pointer-events: none;
+            z-index: 1000;
+            opacity: 0;
+            transform: scale(0) translateY(0);
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            backdrop-filter: blur(8px);
+        }
+        .speech-bubble.show {
+            opacity: 1;
+            transform: scale(1) translateY(-8px); 
+        }
+        .speech-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-top: 10px solid white;
+        }
+        .sound-icon {
+            font-size: 40px;
+            text-align: center;
+        }
+        .game-area {
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-start;
+            margin-top: 40px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .options-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .section-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .orbit-options, .sound-options {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .orbit-card, .sound-card {
+            width: 150px;
+            height: 150px;
+            background: rgba(255,255,255,0.9);
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: move;
+            transition: transform 0.2s;
+            padding: 10px;
+        }
+        .orbit-card:hover, .sound-card:hover {
+            transform: scale(1.05);
+        }
+        .orbit-card.dragging, .sound-card.dragging {
+            opacity: 0.5;
+        }
+        .orbit-icon, .sound-icon-card {
+            width: 100px;
+            height: 100px;
+            margin-bottom: 5px;
+        }
+        .sound-icon-card {
+            font-size: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .orbit-label, .sound-label {
+            color: #333;
+            font-weight: bold;
+            font-size: 0.9em;
+            text-align: center;
+        }
+        .drop-zones {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .drop-card {
+            width: 180px;
+            height: 280px;
+            border: 3px dashed rgba(255,255,255,0.5);
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            padding: 15px;
+        }
+        
+        .drop-card.drag-over {
+            background: rgba(255,255,255,0.2);
+            border-style: solid;
+            transform: scale(1.05);
+        }
+        
+        .drop-card.filled {
+            border-style: solid;
+            background: rgba(255,255,255,0.15);
+        }
+        
+        .drop-card.correct {
+            border-color: #4CAF50;
+            background: rgba(76, 175, 80, 0.2);
+        }
+        
+        .color-indicator {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            margin-bottom: 10px;
+           flex-shrink: 0;
+        }
+        .color-indicator.red { background: radial-gradient(circle at 35% 35%, #ff88aa, var(--red)); box-shadow: 0 0 12px rgba(255,68,102,0.5); }
+        .color-indicator.green { background: radial-gradient(circle at 35% 35%, #aaffdd, var(--green)); box-shadow: 0 0 12px rgba(0,255,170,0.5); }
+        .color-indicator.blue { background: radial-gradient(circle at 35% 35%, #88ccff, var(--blue)); box-shadow: 0 0 12px rgba(68,170,255,0.5); } 
+        
+        .dropped-orbit, .dropped-sound {
+            width: 80px;
+            height: 80px;
+        }
+        
+        .dropped-sound {
+            font-size: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .drop-label {
+            color: white;
+            font-size: 0.8em;
+            margin-top: 5px;
+            font-weight: bold;
+        }
+        
+        .congratulations {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #667eea;
+            padding: 40px 60px;
+            border-radius: 20px;
+            text-align: center;
+            z-index: 1000;
+            animation: popIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+        
+        @keyframes popIn {
+            0% {
+                transform: translate(-50%, -50%) scale(0);
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+        
+        .congratulations h2 {
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+        
+        .congratulations p {
+            font-size: 1.3em;
+        }
+        
+        .reset-btn {
+            margin-top: 20px;
+            padding: 12px 30px;
+            font-size: 1.1em;
+            background: white;
+            color: #667eea;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.2s;
+        }
+        
+        .reset-btn:hover {
+            transform: scale(1.1);
+        }
+	.multi-slot-row {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+        }
+        .drop-placeholder {
+            width: 60px;
+            height: 60px;
+            border: 2px dashed rgba(255,255,255,0.25);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(255,255,255,0.2);
+            font-size: 1.4em;
+        }
+        .multi-slot-row .drop-placeholder {
+            width: 52px;
+            height: 52px;
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Be a Galactic Archaeologist!</h1>
+	<div class="instructions">
+	    <p style="color: #276AB3;">Dr. Amalie Stokholm, a.strova.dk</p>
+	    <br>
+
+	    <p>
+		Observe the group of
+		<span style="color: rgba(200,215,255,1);"><b>stars</b></span>
+		below.
+	    </p>
+	    <br>
+
+	    <p>
+		<span style="color: rgba(200,215,255,1);"><b>Click on a star</b></span>
+		to listen to its sound and to see its galactic orbit more clearly.
+	    </p>
+	    <br>
+
+	    <p>Find the patterns:</p>
+
+	    <p>
+		What kind(s) of movements and sounds characterize the
+		<span style="color: #ff4466;">red</span>,
+		<span style="color: #44aaff;">blue</span>, and
+		<span style="color: #00ffaa;">green</span> stars?
+	    </p>
+	    <br>
+
+	    <p>
+		<span style="color: rgba(200,215,255,1);"><b>Drag and drop</b></span>
+		your answers onto the note blocks below.
+	    </p>
+	</div>
+        
+        <div id="canvas-container">
+            <div id="speech-bubble" class="speech-bubble">
+                <div class="sound-icon"></div>
+            </div>
+        </div>
+	<div class="game-area">
+            <div class="options-section">
+                <div class="section-title">Orbit Types</div>
+                <div class="orbit-options">
+                    <div class="orbit-card" draggable="true" data-orbit="circle">
+                        <svg class="orbit-icon" viewBox="0 0 100 100">
+                            <circle cx="50" cy="50" r="35" fill="none" stroke="rgba(200,215,255,0.6)" stroke-width="2.5"/>
+                            <circle cx="85" cy="50" r="5" fill="#aabbff"/>
+                        </svg>
+                        <div class="orbit-label">In-plane Circle</div>
+                    </div>
+                    <div class="orbit-card" draggable="true" data-orbit="ellipse-flat">
+                        <svg class="orbit-icon" viewBox="0 0 100 100">
+                            <ellipse cx="50" cy="50" rx="40" ry="22" fill="none" stroke="rgba(200,215,255,0.6)" stroke-width="2.5"/>
+                            <circle cx="90" cy="50" r="5" fill="#aabbff"/>
+                        </svg>
+                        <div class="orbit-label">In-plane Ellipse</div>
+                    </div>
+                    <div class="orbit-card" draggable="true" data-orbit="ellipse-3d">
+                        <svg class="orbit-icon" viewBox="0 0 100 100">
+                            <ellipse cx="50" cy="50" rx="40" ry="18" fill="none" stroke="rgba(200,215,255,0.25)" stroke-width="2" opacity="0.5"/>
+                            <ellipse cx="50" cy="50" rx="40" ry="18" fill="none" stroke="rgba(200,215,255,0.6)" stroke-width="2.5" transform="rotate(50 50 50)"/>
+                            <circle cx="22" cy="18" r="5" fill="#aabbff"/>
+                        </svg>
+                        <div class="orbit-label">Out-of-plane Ellipse</div>
+                    </div>
+                </div>
+        
+                <div class="section-title">Sound Types</div>
+                <div class="sound-options">
+                    <div class="sound-card" draggable="true" data-sound="beep">
+                        <div class="sound-icon-card">🔔</div>
+                        <div class="sound-label">High Beep</div>
+                    </div>
+                    
+                    <div class="sound-card" draggable="true" data-sound="bloop">
+                        <div class="sound-icon-card">💧</div>
+                        <div class="sound-label">Bloop</div>
+                    </div>
+                    
+                    <div class="sound-card" draggable="true" data-sound="buzz">
+                        <div class="sound-icon-card">⚡</div>
+                        <div class="sound-label">Buzz</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="drop-zones">
+                <div class="drop-card" data-color="red">
+                    <div class="color-indicator red"></div>
+                    <div class="drop-label">Orbit</div>
+                    <div class="drop-placeholder" data-slot="orbit-0">+</div>
+                    <div class="drop-label">Sound</div>
+                    <div class="drop-placeholder" data-slot="sound-0">+</div>
+                </div>
+
+                <div class="drop-card" data-color="green">
+                    <div class="color-indicator green"></div>
+                    <div class="drop-label">Orbit</div>
+                    <div class="drop-placeholder" data-slot="orbit-0">+</div>
+                    <div class="drop-label">Sounds <span style="font-size:0.8em;opacity:0.6">(both)</span></div>
+                    <div class="multi-slot-row">
+                        <div class="drop-placeholder" data-slot="sound-0">+</div>
+                        <div class="drop-placeholder" data-slot="sound-1">+</div>
+                    </div>
+                </div>
+
+                <div class="drop-card" data-color="blue">
+                    <div class="color-indicator blue"></div>
+                    <div class="drop-label">Orbit</div>
+                    <div class="drop-placeholder" data-slot="orbit-0">+</div>
+                    <div class="drop-label">Sounds <span style="font-size:0.8em;opacity:0.6">(both)</span></div>
+                    <div class="multi-slot-row">
+                        <div class="drop-placeholder" data-slot="sound-0">+</div>
+                        <div class="drop-placeholder" data-slot="sound-1">+</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="congratulations" class="congratulations">
+        <h2>Congratulations!</h2>
+	<p>You have correctly measured identified the patterns.</p>
+	<p>So now is the next phase of research: what does this mean?</p>
+	<p> How can these pattern come to be? Are they as expected from the best model of how this came to be?</p>
+	<p>Or do we need to think in differently and perhaps adjust our ideas and model?</p>
+
+	<p> Thank you so much for playing! </p>
+        <button class="reset-btn" onclick="resetGame()">Play Again</button>
+    </div>
+     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        let scene, camera, renderer;
+        let starParticles = [];
+        let activeRings = []; // { ring, opacity } — rings currently fading out
+        let time = 0;
+        let audioContext;
+
+        // correctAnswers: arrays = ALL must be filled in (order-independent)
+        const correctAnswers = {
+            red:   { orbits: ['ellipse-3d'],   sounds: ['buzz'] },
+            green: { orbits: ['ellipse-flat'], sounds: ['bloop', 'buzz'] },
+            blue:  { orbits: ['circle'],       sounds: ['beep', 'bloop'] }
+        };
+
+        // userAnswers mirrors the slot structure: orbits[] and sounds[] indexed by slot
+        let userAnswers = {
+            red:   { orbits: [null], sounds: [null] },
+            green: { orbits: [null], sounds: [null, null] },
+            blue:  { orbits: [null], sounds: [null, null] }
+	}
+
+        const soundIcons = { beep: '🔔', bloop: '💧', buzz: '⚡'};
+
+        function initAudio() {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        function playSound(type) {
+            if (!audioContext) initAudio();
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            osc.connect(gain);
+            gain.connect(audioContext.destination);
+            switch (type) {
+                case 'beep':
+                    osc.frequency.value = 880;
+                    osc.type = 'sine';
+                    gain.gain.setValueAtTime(0.25, audioContext.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.35);
+                    osc.start(); osc.stop(audioContext.currentTime + 0.35);
+                    break;
+                case 'bloop':
+                    osc.frequency.setValueAtTime(500, audioContext.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(180, audioContext.currentTime + 0.25);
+                    osc.type = 'sine';
+                    gain.gain.setValueAtTime(0.28, audioContext.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.45);
+                    osc.start(); osc.stop(audioContext.currentTime + 0.45);
+                    break;
+                case 'buzz':
+                    osc.frequency.value = 130;
+                    osc.type = 'sawtooth';
+                    gain.gain.setValueAtTime(0.18, audioContext.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.55);
+                    osc.start(); osc.stop(audioContext.currentTime + 0.55);
+                    break;
+            }
+        }
+
+        function showSpeechBubble(x, y, soundType) {
+            const bubble = document.getElementById('speech-bubble');
+            bubble.querySelector('.sound-icon').textContent = soundIcons[soundType];
+            bubble.style.left = x + 'px';
+            bubble.style.top = (y - 75) + 'px';
+            bubble.classList.add('show');
+            setTimeout(() => bubble.classList.remove('show'), 1100);
+        }
+
+        function makeStarTexture(color) {
+            const size = 256;
+            const c = document.createElement('canvas');
+            c.width = c.height = size;
+            const ctx = c.getContext('2d');
+            const cx = size / 2, cy = size / 2;
+
+            // Outer glow
+            const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, size / 2);
+            glow.addColorStop(0, color + 'ff');
+            glow.addColorStop(0.15, color + 'cc');
+            glow.addColorStop(0.4, color + '44');
+            glow.addColorStop(1, color + '00');
+            ctx.fillStyle = glow;
+            ctx.fillRect(0, 0, size, size);
+
+            // Sharp spike cross
+            ctx.strokeStyle = color + 'ee';
+            ctx.lineWidth = 1;
+            for (let angle = 0; angle < Math.PI; angle += Math.PI / 4) {
+                ctx.beginPath();
+                const len = 28;
+                ctx.moveTo(cx + Math.cos(angle) * 3, cy + Math.sin(angle) * 3);
+                ctx.lineTo(cx + Math.cos(angle) * len, cy + Math.sin(angle) * len);
+                ctx.moveTo(cx - Math.cos(angle) * 3, cy - Math.sin(angle) * 3);
+                ctx.lineTo(cx - Math.cos(angle) * len, cy - Math.sin(angle) * len);
+                ctx.stroke();
+            }
+            return new THREE.CanvasTexture(c);
+        }
+
+        function hexToCSS(hex) {
+            return '#' + hex.toString(16).padStart(6, '0');
+        }
+
+        function galaxyPosition(armIndex, numArms, armOffset, radius, spread, tiltAxis) {
+            const armAngle = (armIndex / numArms) * Math.PI * 2;
+            // Logarithmic spiral: angle grows with radius
+            const spiralAngle = armAngle + armOffset * 2.5;
+            const jitterR = (Math.random() - 0.5) * spread * radius;
+            const jitterTheta = (Math.random() - 0.5) * 0.5;
+            const r = radius + jitterR;
+            const theta = spiralAngle + jitterTheta;
+            const x = Math.cos(theta) * r;
+            const y = Math.sin(theta) * r;
+            return { x, y };
+        }
+
+        function initThreeJS() {
+            const container = document.getElementById('canvas-container');
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x03020f);
+
+            scene.fog = new THREE.FogExp2(0x03020f, 0.018);
+
+	    camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 300);
+
+            camera.position.set(0, 6, 11);
+            camera.lookAt(0, 0, 0);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(renderer.domElement);
+
+            scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+            const pLight = new THREE.PointLight(0x8899ff, 2, 30);
+            pLight.position.set(0, 5, 0);
+            scene.add(pLight);
+
+            const bgGeo = new THREE.BufferGeometry();
+            const bgCount = 3500;
+            const bgPos = new Float32Array(bgCount * 3);
+            for (let i = 0; i < bgCount; i++) {
+                bgPos[i * 3]     = (Math.random() - 0.5) * 80;
+		bgPos[i * 3 + 1] = (Math.random() < 0.5 ? 1 : -1) * (2 + Math.random() * 18); // avoid y=0 centre
+                bgPos[i * 3 + 2] = (Math.random() - 0.5) * 60 - 10;
+            }
+            bgGeo.setAttribute('position', new THREE.BufferAttribute(bgPos, 3));
+            const bgMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.06, transparent: true, opacity: 0.5 });
+            scene.add(new THREE.Points(bgGeo, bgMat));
+
+            const colorGroups = [
+                { hex: 0xff4466, cssHex: '#ff4466', name: 'red',   sound: 'buzz',  colorIndex: 0 },
+                { hex: 0x00ffaa, cssHex: '#00ffaa', name: 'green', sound: null,    colorIndex: 1 },
+                { hex: 0x44aaff, cssHex: '#44aaff', name: 'blue',  sound: null,    colorIndex: 2 }
+            ];
+
+            const textures = {};
+            colorGroups.forEach(g => { textures[g.name] = makeStarTexture(g.cssHex); });
+
+            // Orbit shape parameters — defined once, shared by both stars and trail rings
+            // Flat plane is X-Z. tilt rotates orbits up into Y around the X-axis.
+            // Red:   steeply tilted ellipse (out of X-Z plane)
+            // Green: flat ellipse in X-Z plane + small per-star Y offset
+            // Blue:  circle in X-Z plane (y = 0)
+            const TILT = Math.PI / 2.2; // ~82° — very clearly out-of-plane
+            const orbitDefs = [
+                { rx: (r) => r * 1.5,  ry: (r) => r * 0.65, tilt: TILT }, // red:   tilted ellipse
+                { rx: (r) => r * 1.7,  ry: (r) => r * 0.55, tilt: 0    }, // green: flat ellipse
+                { rx: (r) => r,        ry: (r) => r,         tilt: 0    }, // blue:  circle
+            ];
+
+            // Radius levels used for BOTH stars and trail rings (evenly spaced)
+            const RADIUS_MIN = 1.5, RADIUS_MAX = 6.8;
+	    // Green stars use a closer, tighter radius range than blue
+            const GREEN_RADIUS_MIN = 0.75, GREEN_RADIUS_MAX = 3.6;
+
+            const counts = { red: 35, green: 50, blue: 120 };
+
+            colorGroups.forEach((grp) => {
+                const mat = new THREE.SpriteMaterial({
+                    map: textures[grp.name],
+                    transparent: true,
+                    blending: THREE.AdditiveBlending,
+                    depthWrite: false
+                });
+
+                const COUNT = counts[grp.name];
+
+                for (let i = 0; i < COUNT; i++) {
+                    const sprite = new THREE.Sprite(mat.clone());
+                    const spriteScale = 0.28 + Math.random() * 0.22;
+                    sprite.scale.set(spriteScale, spriteScale, 1);
+
+	            // Green uses a tighter radius range closer to centre; red/blue use full range
+                    const rMin = grp.colorIndex === 1 ? GREEN_RADIUS_MIN : RADIUS_MIN;
+                    const rMax = grp.colorIndex === 1 ? GREEN_RADIUS_MAX : RADIUS_MAX;
+                    const radiusBase = rMin + (i / (COUNT - 1)) * (rMax - rMin);
+                    // const speedMult  = 0.25 + Math.random() * 0.35;
+	            const speedMult =
+			    grp.colorIndex === 0 ? 0.53 + Math.random() * 0.35  :  // red
+			    grp.colorIndex === 2 ? 0.25 + Math.random() * 0.35  :  // blue
+						   0.1 + Math.random() * 0.2;    // green
+                    const phase      = Math.random() * Math.PI * 2;
+
+                    // Green gets a small fixed z-offset so they form a slightly puffed disc
+                    const zWobble = grp.colorIndex === 1 ? (Math.random() - 0.5) * 1.2 : 0;
+
+		    // Red stars each get a fully random orbital plane orientation
+                    const randomTiltX = grp.colorIndex === 0 ? Math.random() * Math.PI * 2 : null;
+                    const randomTiltZ = grp.colorIndex === 0 ? Math.random() * Math.PI * 2 : null;
+
+                    // Green stars: per-star ellipse eccentricity and apogee direction in the disc plane
+                    const greenEcc    = grp.colorIndex === 1 ? 0.3 + Math.random() * 0.65 : null;
+                    const greenApogee = grp.colorIndex === 1 ? Math.random() * Math.PI * 2 : null;
+
+                    // Determine sound per star for blue and green
+                    let starSound = grp.sound;
+                    if (grp.colorIndex === 2) {
+                        // Blue: inner (small radius) -> bloop, outer (large radius) -> beep
+                        const blueThreshold = (RADIUS_MIN + RADIUS_MAX) / 2; // ~3.8
+                        starSound = radiusBase < blueThreshold ? 'bloop' : 'beep';
+                    } else if (grp.colorIndex === 1) {
+                        // Green: biggest radii -> beep, smaller -> buzz
+                        const greenThreshold = (GREEN_RADIUS_MIN + GREEN_RADIUS_MAX) / 2; // ~2.4
+                        starSound = radiusBase > greenThreshold ? 'beep' : 'buzz';
+                    }
+
+                    sprite.userData = {
+                        color: grp.name,
+                        sound: starSound,
+                        colorIndex: grp.colorIndex,
+                        index: i,
+                        radiusBase,
+                        speedMult,
+                        phase,
+                        zWobble,
+			randomTiltX,
+                        randomTiltZ,
+                        greenEcc,
+                        greenApogee,
+                        twinkleOffset: Math.random() * Math.PI * 2,
+                        twinkleSpeed:  1.5 + Math.random() * 2.5
+                    };
+
+                    // Create a hidden orbit ring sized exactly for this star's radius
+                    const def = orbitDefs[grp.colorIndex];
+		    const tiltXForRing = grp.colorIndex === 0 ? randomTiltX : def.tilt;
+                    const tiltZForRing = grp.colorIndex === 0 ? randomTiltZ : 0;
+                    // Green: derive rx/ry from per-star eccentricity; others use shared def
+                    const ringRx = grp.colorIndex === 1 ? radiusBase * (1 + greenEcc * 0.5) : def.rx(radiusBase);
+                    const ringRy = grp.colorIndex === 1 ? radiusBase * (1 - greenEcc)        : def.ry(radiusBase);
+                    const ring = makeOrbitRing(ringRx, ringRy, tiltXForRing, tiltZForRing, zWobble, grp.hex, grp.colorIndex === 1 ? greenApogee : 0);
+                    ring.material.opacity = 0;
+                    ring.visible = false;
+                    scene.add(ring);
+                    sprite.userData.orbitRing = ring;
+
+                    scene.add(sprite);
+                    starParticles.push(sprite);
+                }
+
+            });
+
+            renderer.domElement.addEventListener('click', onCanvasClick);
+            window.addEventListener('resize', onWindowResize);
+            animate();
+        }
+
+	function makeOrbitRing(rx, ry, tiltX, tiltZ, zWobble, color, apogeeAngle = 0) {
+            const pts = [];
+            const N = 120;
+            for (let i = 0; i <= N; i++) {
+                const a = (i / N) * Math.PI * 2;
+                // Start in X-Z plane; apogeeAngle rotates the ellipse long-axis within the plane
+                const lx0 = Math.cos(a + apogeeAngle) * rx;
+                const lz0 = Math.sin(a + apogeeAngle) * ry;
+                // tiltX: rotate around X-axis (lifts into Y)
+                const ly1 = lz0 * Math.sin(tiltX) + zWobble;
+                const lz1 = lz0 * Math.cos(tiltX);
+                // tiltZ: rotate around Z-axis (spins in X-Y)
+                const lx2 = lx0 * Math.cos(tiltZ) - ly1 * Math.sin(tiltZ);
+                const ly2 = lx0 * Math.sin(tiltZ) + ly1 * Math.cos(tiltZ);
+                pts.push(new THREE.Vector3(lx2, ly2, lz1));
+            }
+            const geo = new THREE.BufferGeometry().setFromPoints(pts);
+            const mat = new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0 });
+            return new THREE.Line(geo, mat);
+        }
+
+
+        // Mirror the orbit definitions from init (must match exactly)
+        const TILT_ANIM = Math.PI / 2.2; // ~82° — steeply out of X-Z plane
+        const orbitDefsAnim = [
+            { rx: (r) => r * 1.5,  ry: (r) => r * 0.65, tilt: TILT_ANIM }, // red:   tilted ellipse
+            { rx: (r) => r * 1.7,  ry: (r) => r * 0.55, tilt: 0          }, // green: flat ellipse in X-Z + yWobble
+            { rx: (r) => r,        ry: (r) => r,         tilt: 0          }, // blue:  circle in X-Z plane
+        ];
+
+        function animate() {
+            requestAnimationFrame(animate);
+            time += 0.007;
+	    scene.rotation.y += 0.0008;
+
+	    camera.position.x = Math.sin(time * 0.1) * 0.5;
+            camera.lookAt(0, 0, 0);
+
+            starParticles.forEach(star => {
+                const { colorIndex, radiusBase, speedMult, phase, zWobble, randomTiltX, randomTiltZ, greenEcc, greenApogee, twinkleOffset, twinkleSpeed } = star.userData;
+                const t = time * speedMult + phase;
+                const r = radiusBase;
+
+                let px, py, pz;
+                if (colorIndex === 0) {
+                    // Red: each star has its own randomly oriented orbital plane (tiltX + tiltZ)
+                    const def = orbitDefsAnim[colorIndex];
+                    const lx0 = Math.cos(t) * def.rx(r);
+                    const lz0 = Math.sin(t) * def.ry(r);
+                    const ly1 = lz0 * Math.sin(randomTiltX);
+                    const lz1 = lz0 * Math.cos(randomTiltX);
+                    px = lx0 * Math.cos(randomTiltZ) - ly1 * Math.sin(randomTiltZ);
+                    py = lx0 * Math.sin(randomTiltZ) + ly1 * Math.cos(randomTiltZ);
+                    pz = lz1;
+                } else if (colorIndex === 1) {
+                    // Green: per-star eccentricity and apogee direction; flat in X-Z plane + zWobble
+                    const rx = r * (1 + greenEcc * 0.5);
+                    const ry = r * (1 - greenEcc);
+                    const lx0 = Math.cos(t + greenApogee) * rx;
+                    const lz0 = Math.sin(t + greenApogee) * ry;
+                    px = lx0;
+                    py = zWobble || 0;
+                    pz = lz0;
+                } else {
+                    // Blue: circle in X-Z plane
+                    const def = orbitDefsAnim[colorIndex];
+                    const lx0 = Math.cos(t) * def.rx(r);
+                    const lz0 = Math.sin(t) * def.ry(r);
+                    px = lx0;
+                    py = lz0 * Math.sin(def.tilt);
+                    pz = lz0 * Math.cos(def.tilt);
+                }
+
+                star.position.set(px, py, pz);
+
+                // Twinkle: scale pulsing
+                const twinkle = 0.82 + 0.18 * Math.sin(time * twinkleSpeed + twinkleOffset);
+                const base = 0.25 + (radiusBase / 5.8) * 0.25;
+                star.scale.setScalar(base * twinkle);
+
+                // Twinkle: opacity
+                star.material.opacity = 0.7 + 0.3 * twinkle;
+            });
+
+            // Fade out active orbit rings
+            for (let i = activeRings.length - 1; i >= 0; i--) {
+                const entry = activeRings[i];
+                entry.opacity -= 0.002; // if 0.004 then fade over ~2.5s at 60fps
+                if (entry.opacity <= 0) {
+                    entry.ring.visible = false;
+                    entry.ring.material.opacity = 0;
+                    activeRings.splice(i, 1);
+                } else {
+                    entry.ring.material.opacity = entry.opacity;
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        function onCanvasClick(event) {
+            const container = document.getElementById('canvas-container');
+            const rect = container.getBoundingClientRect();
+            const mouse = new THREE.Vector2(
+                ((event.clientX - rect.left) / rect.width) * 2 - 1,
+                -((event.clientY - rect.top) / rect.height) * 2 + 1
+            );
+
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(mouse, camera);
+            raycaster.params.Sprite = { threshold: 0.3 };
+
+            const hits = raycaster.intersectObjects(starParticles);
+            if (hits.length > 0) {
+                const star = hits[0].object;
+                const soundType = star.userData.sound;
+                playSound(soundType);
+                showSpeechBubble(event.clientX - rect.left, event.clientY - rect.top, soundType);
+
+                // Show this star's orbit ring and start fade
+                const ring = star.userData.orbitRing;
+                if (ring) {
+                    ring.visible = true;
+                    const startOpacity = 0.75;
+                    ring.material.opacity = startOpacity;
+                    // Remove any existing entry for this ring before re-adding
+                    const existing = activeRings.findIndex(e => e.ring === ring);
+                    if (existing !== -1) activeRings.splice(existing, 1);
+                    activeRings.push({ ring, opacity: startOpacity });
+                }
+
+                // Flash effect
+                const origOpacity = star.material.opacity;
+                star.material.opacity = 1;
+                star.scale.multiplyScalar(1.6);
+                setTimeout(() => {
+                    star.material.opacity = origOpacity;
+                    star.scale.divideScalar(1.6);
+                }, 180);
+            }
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('canvas-container');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        // Drag & Drop
+        let draggedElement = null;
+        let draggedType = null;
+
+        document.querySelectorAll('.orbit-card, .sound-card').forEach(card => {
+            card.addEventListener('dragstart', e => {
+                draggedElement = card;
+                draggedType = card.classList.contains('orbit-card') ? 'orbit' : 'sound';
+                card.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'copy';
+            });
+            card.addEventListener('dragend', () => card.classList.remove('dragging'));
+        });
+
+        document.querySelectorAll('.drop-card').forEach(card => {
+            card.addEventListener('dragover', e => { e.preventDefault(); card.classList.add('drag-over'); });
+            card.addEventListener('dragleave', () => card.classList.remove('drag-over'));
+            card.addEventListener('drop', e => {
+                e.stopPropagation();
+                card.classList.remove('drag-over');
+                const color = card.getAttribute('data-color');
+
+                if (draggedType === 'orbit') {
+                    const orbitType = draggedElement.getAttribute('data-orbit');
+                    // Find first empty orbit slot; if all filled use slot 0
+                    const slots = [...card.querySelectorAll('[data-slot^="orbit-"]')];
+                    const target = slots.find(s => s.classList.contains('drop-placeholder')) || slots[0];
+                    const idx = parseInt(target.getAttribute('data-slot').split('-')[1]);
+
+                    const icon = draggedElement.querySelector('.orbit-icon').cloneNode(true);
+                    icon.classList.add('dropped-orbit');
+                    icon.setAttribute('data-slot', 'orbit-' + idx);
+                    icon.style.width = '52px'; icon.style.height = '52px';
+                    target.replaceWith(icon);
+                    userAnswers[color].orbits[idx] = orbitType;
+
+                } else {
+                    const soundType = draggedElement.getAttribute('data-sound');
+                    const slots = [...card.querySelectorAll('[data-slot^="sound-"]')];
+                    const target = slots.find(s => s.classList.contains('drop-placeholder')) || slots[0];
+                    const idx = parseInt(target.getAttribute('data-slot').split('-')[1]);
+
+                    const el = document.createElement('div');
+                    el.classList.add('dropped-sound');
+                    el.setAttribute('data-slot', 'sound-' + idx);
+                    el.textContent = soundIcons[soundType];
+                    target.replaceWith(el);
+                    userAnswers[color].sounds[idx] = soundType;
+                }
+
+                card.classList.add('filled');
+                evaluateCard(card, color);
+                checkWinCondition();
+            });
+        });
+
+        function evaluateCard(card, color) {
+            const ans = userAnswers[color];
+            const correct = correctAnswers[color];
+            const allFilled = ans.orbits.every(Boolean) && ans.sounds.every(Boolean);
+            const orbitsMatch = [...ans.orbits].sort().join(',') === [...correct.orbits].sort().join(',');
+            const soundsMatch = [...ans.sounds].sort().join(',') === [...correct.sounds].sort().join(',');
+            if (allFilled && orbitsMatch && soundsMatch) {
+                card.classList.add('correct');
+            } else {
+                card.classList.remove('correct');
+            }
+        }
+
+        function checkWinCondition() {
+            const allCorrect = Object.keys(correctAnswers).every(color => {
+                const ans = userAnswers[color];
+                const correct = correctAnswers[color];
+                const allFilled = ans.orbits.every(Boolean) && ans.sounds.every(Boolean);
+                const orbitsMatch = [...ans.orbits].sort().join(',') === [...correct.orbits].sort().join(',');
+                const soundsMatch = [...ans.sounds].sort().join(',') === [...correct.sounds].sort().join(',');
+                return allFilled && orbitsMatch && soundsMatch;
+            });
+            if (allCorrect) {
+                setTimeout(() => { document.getElementById('congratulations').style.display = 'block'; }, 600);
+            }
+        }
+
+        // Slot counts per card for reset
+        const cardSlotConfig = {
+            red:   { orbits: 1, sounds: 1 },
+            green: { orbits: 1, sounds: 2 },
+            blue:  { orbits: 1, sounds: 2 }
+        };
+
+        function makePlaceholder(slot) {
+            const p = document.createElement('div');
+            p.className = 'drop-placeholder';
+            p.setAttribute('data-slot', slot);
+            p.textContent = '+';
+            return p;
+        }
+
+        function rebuildSlots(card, type, count) {
+            // Find the label element whose text starts with the capitalised type
+            const label = [...card.querySelectorAll('.drop-label')]
+                .find(l => l.textContent.toLowerCase().startsWith(type));
+            // Remove old slots/rows immediately after the label
+            let next = label.nextElementSibling;
+            while (next && (next.classList.contains('multi-slot-row') || next.classList.contains('drop-placeholder') || next.classList.contains('dropped-orbit') || next.classList.contains('dropped-sound'))) {
+                const rem = next; next = next.nextElementSibling; rem.remove();
+            }
+            if (count === 1) {
+                label.insertAdjacentElement('afterend', makePlaceholder(type + '-0'));
+            } else {
+                const row = document.createElement('div');
+                row.className = 'multi-slot-row';
+                for (let i = 0; i < count; i++) row.appendChild(makePlaceholder(type + '-' + i));
+                label.insertAdjacentElement('afterend', row);
+            }
+        }
+
+        function resetGame() {
+            userAnswers = {
+                red:   { orbits: [null],       sounds: [null] },
+                green: { orbits: [null],        sounds: [null, null] },
+                blue:  { orbits: [null],        sounds: [null, null] }
+            };
+            document.querySelectorAll('.drop-card').forEach(card => {
+                const color = card.getAttribute('data-color');
+                const cfg = cardSlotConfig[color];
+                card.classList.remove('filled', 'correct');
+                rebuildSlots(card, 'orbit', cfg.orbits);
+                rebuildSlots(card, 'sound', cfg.sounds);
+            });
+            document.getElementById('congratulations').style.display = 'none';
+        }
+
+        initThreeJS();
+    </script>
+    
+</body>
+</html>
