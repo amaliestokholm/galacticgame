@@ -642,15 +642,15 @@
                     const phase      = Math.random() * Math.PI * 2;
 
                     // Green gets a small fixed z-offset so they form a slightly puffed disc
-                    const zWobble = grp.colorIndex === 1 ? (Math.random() - 0.5) * 1.2 : 0;
-
-		    // Red stars each get a fully random orbital plane orientation
-                    const randomTiltX = grp.colorIndex === 0 ? Math.random() * Math.PI * 2 : null;
-                    const randomTiltZ = grp.colorIndex === 0 ? Math.random() * Math.PI * 2 : null;
+                    const zWobble = grp.colorIndex === 1 ? (Math.random() - 0.5) * 0.52 : 0;
 
                     // Green stars: per-star ellipse eccentricity and apogee direction in the disc plane
                     const greenEcc    = grp.colorIndex === 1 ? 0.3 + Math.random() * 0.65 : null;
                     const greenApogee = grp.colorIndex === 1 ? Math.random() * Math.PI * 2 : null;
+
+		    // Red stars each get a fully random orbital plane orientation
+                    const randomTiltX = grp.colorIndex === 0 ? Math.random() * Math.PI * 2 : null;
+                    const randomTiltZ = grp.colorIndex === 0 ? Math.random() * Math.PI * 2 : null;
 
                     // Determine sound per star for blue and green
                     let starSound = grp.sound;
@@ -661,7 +661,7 @@
                     } else if (grp.colorIndex === 1) {
                         // Green: biggest radii -> beep, smaller -> buzz
                         const greenThreshold = (GREEN_RADIUS_MIN + GREEN_RADIUS_MAX) / 2; // ~2.4
-                        starSound = radiusBase > greenThreshold ? 'beep' : 'buzz';
+                        starSound = radiusBase > greenThreshold ? 'bloop' : 'buzz';
                     }
 
                     sprite.userData = {
