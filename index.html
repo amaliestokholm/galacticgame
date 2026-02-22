@@ -659,7 +659,7 @@
                         const blueThreshold = (RADIUS_MIN + RADIUS_MAX) / 2; // ~3.8
                         starSound = radiusBase < blueThreshold ? 'bloop' : 'beep';
                     } else if (grp.colorIndex === 1) {
-                        // Green: biggest radii -> beep, smaller -> buzz
+                        // Green: biggest radii -> bloop, smaller -> buzz
                         const greenThreshold = (GREEN_RADIUS_MIN + GREEN_RADIUS_MAX) / 2; // ~2.4
                         starSound = radiusBase > greenThreshold ? 'bloop' : 'buzz';
                     }
