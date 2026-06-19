@@ -540,18 +540,25 @@
             return '#' + hex.toString(16).padStart(6, '0');
         }
 
-        function galaxyPosition(armIndex, numArms, armOffset, radius, spread, tiltAxis) {
-            const armAngle = (armIndex / numArms) * Math.PI * 2;
-            // Logarithmic spiral: angle grows with radius
-            const spiralAngle = armAngle + armOffset * 2.5;
-            const jitterR = (Math.random() - 0.5) * spread * radius;
-            const jitterTheta = (Math.random() - 0.5) * 0.5;
-            const r = radius + jitterR;
-            const theta = spiralAngle + jitterTheta;
-            const x = Math.cos(theta) * r;
-            const y = Math.sin(theta) * r;
-            return { x, y };
+	function makeBgObject(color) {
+            const size = 128;
+            const c = document.createElement('canvas');
+            c.width = c.height = size;
+            const ctx = c.getContext('2d');
+            const cx = size / 2, cy = size / 2;
+
+            const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, size / 2);
+            glow.addColorStop(0,    '#f6f6f6f6');
+            glow.addColorStop(0.08, color + 'ff');
+            glow.addColorStop(0.25, color + 'aa');
+            glow.addColorStop(0.55, color + '33');
+            glow.addColorStop(1,    color + '00');
+            ctx.fillStyle = glow;
+            ctx.fillRect(0, 0, size, size);
+
+            return new THREE.CanvasTexture(c);
         }
+
 
         function initThreeJS() {
             const container = document.getElementById('canvas-container');
@@ -575,17 +582,35 @@
             pLight.position.set(0, 5, 0);
             scene.add(pLight);
 
-            const bgGeo = new THREE.BufferGeometry();
+            const bgTexture = makeBgObject('#ffffff');
+            const bgMat = new THREE.SpriteMaterial({
+                        map: bgTexture,
+                        transparent: true,
+                        blending: THREE.AdditiveBlending,
+                        depthWrite: false
+                });
+
             const bgCount = 3500;
-            const bgPos = new Float32Array(bgCount * 3);
+
             for (let i = 0; i < bgCount; i++) {
-                bgPos[i * 3]     = (Math.random() - 0.5) * 80;
-		bgPos[i * 3 + 1] = (Math.random() < 0.5 ? 1 : -1) * (2 + Math.random() * 18); // avoid y=0 centre
-                bgPos[i * 3 + 2] = (Math.random() - 0.5) * 60 - 10;
-            }
-            bgGeo.setAttribute('position', new THREE.BufferAttribute(bgPos, 3));
-            const bgMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.06, transparent: true, opacity: 0.5 });
-            scene.add(new THREE.Points(bgGeo, bgMat));
+
+                const star = new THREE.Sprite(bgMat.clone());
+
+                star.position.set(
+                                (Math.random() - 0.5) * 80,
+
+                                (Math.random() < 0.5 ? 1 : -1)
+                                * (2 + Math.random() * 18),
+
+                                (Math.random() - 0.5) * 60 - 10
+                );                      
+                const s = 0.05 + Math.random() * 0.08; 
+
+                star.scale.set(s, s, 1);
+
+                scene.add(star);
+                }
+
 
             const colorGroups = [
                 { hex: 0xff4466, cssHex: '#ff4466', name: 'red',   sound: 'buzz',  colorIndex: 0 },
